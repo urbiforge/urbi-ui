@@ -28,6 +28,9 @@
   height: 30px;
   background: #555;
 }
+.closer {
+  float: right;
+}
 /*.dragger::before {
   content: "window";
   color: #fff;
@@ -96,17 +99,28 @@ function show(varName)
 {
     var cid = nextChannel;
     nextChannel++;
-    var cn = "chan_" + cid;
+    var cn = "c_" + cid;
+    var tn = "t_" + cid;
     send('var ' + cn + ' = Channel.new("'+cn+'");');
+    send('var ' + tn + ' = Tag.new();');
     dispatchers[cn] = function(tag, res) {
         document.getElementById(tag).innerText = res;
     };
     d = document.createElement('div');
     d.classList.add("draggable");
-    d.innerHTML = '<div class="dragger">'+varName+'</div><span id="'+cn+'"></div>';
+    d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><span id="'+cn+'"></div>';
     makeResizable(d);
     document.getElementById('board').appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
-    send('every(100ms) ' + cn + ' << ' + varName +',');
+    send(tn+':every(100ms) ' + cn + ' << ' + varName +',');
+}
+
+function closeWidget(event)
+{
+    var d = event.target;
+    var id = d.parentElement.parentElement.children[1].id;
+    var tn = 't' + id.substr(1);
+    send(tn + ".stop();");
+    d.parentElement.parentElement.remove();
 }
 
 dChart = null;
@@ -114,8 +128,10 @@ function graph(varName)
 {
     var cid = nextChannel;
     nextChannel++;
-    var cn = "chan_" + cid;
+    var cn = "c_" + cid;
+    var tn = "t_" + cid;
     send('var ' + cn + ' = Channel.new("'+cn+'");');
+    send('var ' + tn + ' = Tag.new();');
     var chart = null;
     dispatchers[cn] = function(tag, res) {
         chart.data.labels.push(chart.data.labels.length);
@@ -130,7 +146,7 @@ function graph(varName)
     d = document.createElement('div');
     d.classList.add("draggable");
     d.id = "c_" + cn;
-    d.innerHTML = '<div class="dragger">'+varName+'</div><canvas class="dchart" id="'+cn+'"></div>';
+    d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><canvas class="dchart" id="'+cn+'"></div>';
     document.getElementById('board').appendChild(d);
     //document.getElementById('board').innerHTML += '<div class="draggable" id="c_'+cn+'"><div class="dragger">'+varName+'</div><canvas class="dchart" id="'+cn+'"></div></div>';
     setTimeout(function() {
@@ -146,7 +162,7 @@ function graph(varName)
                     }
             });
             dChart = chart;
-            send('every(100ms) ' + cn + ' << ' + varName +',');
+            send(tn + ': every(100ms) ' + cn + ' << ' + varName +',');
     }, 500);
 }
 
