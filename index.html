@@ -10,6 +10,10 @@
     width: 500px;
     height: 400px;
 }
+.history {
+    height: 22%;
+    overflow: scroll;
+}
 .draggable {
   width: 500px;
   height: 400px;
@@ -54,6 +58,8 @@ function onReceive(txt)
     else
     {
         document.getElementById('history').innerText += txt;
+        var hc = document.getElementById('histCont');
+        hc.scrollTop = hc.scrollHeight;
         console.log(txt);
     }
 }
@@ -427,28 +433,59 @@ function makeResizable(element, minW = 100, minH = 100, size = 20)
         return dragMouseDown
     }
 }
+function processCommand(cmd)
+{
+    if (!socket)
+        connect(cmd);
+    else if (cmd[0] == '#')
+    {
+        var s = cmd.indexOf(' ');
+        var rcmd = cmd.substr(1, s-1);
+        var args = cmd.substr(s+1);
+        if (rcmd == 'show')
+            show(args);
+        else if (rcmd == 'graph')
+            graph(args);
+        else if (rcmd == 'connect')
+            connect(args);
+        else if (rcmd == 'watch')
+        {
+            var wargs = args.split('@');
+            var wid = nextChannel;
+            nextChannel++;
+            var wvar = wargs[0];
+            var wexp = wargs[1];
+            var tname = 't_'+wid;
+            var cname = 'c_'+wid;
+            dispatchers[cname] = function(c, v) {
+                var remain = wargs.splice(2);
+                for (var i in remain)
+                {
+                    processCommand(remain[i].trim());
+                }
+            };
+            send(`var ${cname} = Channel.new("${cname}");
+                var ${tname} = Tag.new();
+                ${tname}: every(1s) try { 
+                    var hit = ${wexp};
+                    var Lobby.lobby.${wvar} = hit;
+                    ${cname} << true;
+                    ${tname}.stop();
+                } catch(var e) {},
+                `);
+        }
+    }
+    else
+        send(cmd + "\n");
+}
+
 function onLoad()
 {
     document.getElementById('tCmd').addEventListener('keydown', function(ev) {
             if (ev.key === 'Enter' || ev.keyCode === 13)
             {
                 cmd = document.getElementById('tCmd').value;
-                if (!socket)
-                    connect(cmd);
-                else if (cmd[0] == '#')
-                {
-                    s = cmd.indexOf(' ');
-                    rcmd = cmd.substr(1, s-1);
-                    args = cmd.substr(s+1);
-                    if (rcmd == 'show')
-                        show(args);
-                    else if (rcmd == 'graph')
-                        graph(args);
-                    else if (rcmd == 'connect')
-                        connect(args);
-                }
-                else
-                    send(cmd);
+                processCommand(cmd);
                 document.getElementById('tCmd').value = '';
                 console.log(history);
                 if (hist[hist.length-1] != cmd)
@@ -475,7 +512,7 @@ function onLoad()
 </head>
 <body onload="onLoad()">
 <div id="board" class="board"></div>
-<div class="history">
+<div class="history" id="histCont">
 <pre id="history"></pre>
 </div>
 <div id="command" class="command">
