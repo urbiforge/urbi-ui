@@ -17,7 +17,7 @@
 .draggable {
   border: 3px black solid;
   background: #ddd;
-  position: relative;
+  position: absolute;
 }
 .widgetShow {
     width: 200px;
@@ -567,8 +567,8 @@ function moveLastWidget(x, y, w, h)
 {
     var childs = document.getElementById('board').children;
     var d = childs[childs.length-1];
-    d.style.top = y;
-    d.style.left = x;
+    d.style.top = y+"px";
+    d.style.left = x+"px";
     d.style.width = w;
     d.style.height = h;
 }
