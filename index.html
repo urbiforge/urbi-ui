@@ -46,7 +46,7 @@
   float: right;
 }
 .commandText {
-  width: 100%;
+  width: 80%;
 }
 .slider {
   float: right;
@@ -143,6 +143,7 @@ function show(varName, withEditor)
     };
     props[cn] = {
         varname: varName,
+        kind: (withEditor? 'edit' : 'show'),
     };
     d = document.createElement('div');
     d.classList.add("draggable");
@@ -176,6 +177,8 @@ function button(label, code)
     nextChannel++;
     var cn = "c_" + cid;
     props[cn] = {
+        kind: 'button',
+        label: 'label',
         code: code,
     };
     d = document.createElement('div');
@@ -206,7 +209,10 @@ function slider(varName, rmin, rmax)
         document.getElementById(tag).innerText = res;
     };
     props[cn] = {
+        kind: 'slider',
         varname: varName,
+        rmin: rmin,
+        rmax: rmax,
     };
     var step = 1;
     if (rmax - rmin < 10)
@@ -229,6 +235,10 @@ function graph(varName)
     nextChannel++;
     var cn = "c_" + cid;
     var tn = "t_" + cid;
+    props[cn] = {
+        kind: 'graph',
+        varname: varName,
+    };
     send('var ' + cn + ' = Channel.new("'+cn+'");');
     send('var ' + tn + ' = Tag.new();');
     var chart = null;
@@ -598,6 +608,10 @@ function processCommand(cmd)
             var sargs = args.split(' ');
             moveLastWidget(parseInt(sargs[0]), parseInt(sargs[1]), parseInt(sargs[2]), parseInt(sargs[3]));
         }
+        else if (rcmd == "save")
+            saveState(args);
+        else if (rcmd == "load")
+            loadState(args);
         else if (rcmd == 'connect')
             connect(args);
         else if (rcmd == 'watch')
@@ -660,6 +674,72 @@ function onLoad()
             }
     });
 }
+function download(data, filename, type) {
+    var file = new Blob([data], {type: type});
+    if (window.navigator.msSaveOrOpenBlob) // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    else { // Others
+        var a = document.createElement("a"),
+                url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0); 
+    }
+}
+function saveState(name)
+{
+    for (var k in props)
+    {
+        var v = props[k];
+        var d = document.getElementById(k);
+        var p = d.parentElement;
+        v.left = p.offsetLeft;
+        v.top = p.offsetTop;
+        v.width = p.offsetWidth;
+        v.height = p.offsetHeight;
+    }
+    var data = JSON.stringify(props);
+    download(data, name + '.json', 'application/json');
+}
+function loadState(name)
+{
+    document.getElementById('inFile').click();
+}
+
+function injectState(d)
+{
+    for (var k in d)
+    {
+        var v = d[k];
+        var kind = v.kind;
+        if (kind == 'slider')
+            processCommand(`#slider ${v.rmin} ${v.rmax} ${v.varname}`);
+        else if (kind == 'button')
+            processCommand(`#button ${v.label.replaceAll(' ', '_')} ${v.code}`);
+        else
+            processCommand(`#${v.kind} ${v.varname}`);
+        processCommand(`#move ${v.left} ${v.top} ${v.width} ${v.height}`);
+    }
+}
+
+function loadFile()
+{
+    var fe = document.getElementById('inFile');
+    var files = fe.files;
+    const reader = new FileReader();
+    reader.readAsText(files[0]);
+    reader.addEventListener('load', () => {
+            var content = reader.result.toString();
+            console.log(content);
+            var d = JSON.parse(content);
+            injectState(d);
+    });
+}
 </script>
 </head>
 <body onload="onLoad()">
@@ -669,6 +749,7 @@ function onLoad()
 </div>
 <div id="command" class="command">
    <input type="text" id="tCmd" class="commandText" placeholder="host or host:port to connect to">
+   Load conf:<input type="file" id="inFile" onchange="loadFile()" />
 </div>
 </body>
 </html>
