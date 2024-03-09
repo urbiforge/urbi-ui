@@ -15,18 +15,28 @@
     overflow: scroll;
 }
 .draggable {
-  width: 500px;
-  height: 400px;
   border: 3px black solid;
-  background: #ccc;
+  background: #ddd;
   position: relative;
 }
+.widgetShow {
+    width: 200px;
+    height: 150px;
+}
+.variable {
+    font-size: 50px;
+}
+.widgetGraph {
+  width: 500px;
+  height: 400px;
+}
+
 .draggable.dragging {
   user-select: none;
 }
 .dragger {
   height: 30px;
-  background: #555;
+  background: #888;
 }
 .closer {
   float: right;
@@ -108,7 +118,8 @@ function show(varName)
     };
     d = document.createElement('div');
     d.classList.add("draggable");
-    d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><span id="'+cn+'"></div>';
+    d.classList.add("widgetShow");
+    d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><span id="'+cn+'" class="variable"></div>';
     makeResizable(d);
     document.getElementById('board').appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
     send(tn+':every(100ms) ' + cn + ' << ' + varName +',');
@@ -145,6 +156,7 @@ function graph(varName)
     };
     d = document.createElement('div');
     d.classList.add("draggable");
+    d.classList.add("widgetGraph");
     d.id = "c_" + cn;
     d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><canvas class="dchart" id="'+cn+'"></div>';
     document.getElementById('board').appendChild(d);
