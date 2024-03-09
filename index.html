@@ -41,6 +41,12 @@
 .closer {
   float: right;
 }
+.commandText {
+  width: 100%;
+}
+.slider {
+  float: right;
+}
 /*.dragger::before {
   content: "window";
   color: #fff;
@@ -84,7 +90,9 @@ function connect(hp) {
     if (hpl.length > 1)
         port = parseInt(hpl[1]);
     socket = new WebSocket("ws://" + host + ":" + port);
-    socket.addEventListener("open", e => {});
+    socket.addEventListener("open", e => {
+            document.getElementById('tCmd').placeholder = '#show #graph #edit or urbiscrit code';
+    });
     socket.addEventListener("message", e => {
             var pl = e.data;
             pl.text().then(txt => onReceive(txt));
@@ -115,7 +123,7 @@ function onEditKeydown(ev)
         var val = ev.target.value;
         var id = ev.target.parentElement.children[1].id;
         var varname = props[id].varname;
-        send(`${varname} = ${val};`);
+        send(`${varname} = ${val}|;`);
     }
 }
 function show(varName, withEditor)
@@ -153,6 +161,42 @@ function closeWidget(event)
     d.parentElement.parentElement.remove();
 }
 
+function onSliderInput(ev)
+{
+    var val = ev.target.value;
+    var id = ev.target.parentElement.children[1].id;
+    var varname = props[id].varname;
+    send(`${varname} = ${val}|;`);
+}
+
+function slider(varName, rmin, rmax)
+{
+    var cid = nextChannel;
+    nextChannel++;
+    var cn = "c_" + cid;
+    var tn = "t_" + cid;
+    send('var ' + cn + ' = Channel.new("'+cn+'");');
+    send('var ' + tn + ' = Tag.new();');
+    dispatchers[cn] = function(tag, res) {
+        document.getElementById(tag).innerText = res;
+    };
+    props[cn] = {
+        varname: varName,
+    };
+    var step = 1;
+    if (rmax - rmin < 10)
+    {
+        step = (rmax-rmin) / 100;
+    }
+    d = document.createElement('div');
+    d.classList.add("draggable");
+    d.classList.add("widgetShow");
+    hEditor = `<input class="slider" type="range" step="${step}" min="${rmin}" max="${rmax}" oninput="onSliderInput(event)"/>`;
+    d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><span id="'+cn+'" class="variable"></span>'+hEditor+'</div>';
+    makeResizable(d);
+    document.getElementById('board').appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
+    send(tn+':every(100ms) ' + cn + ' << ' + varName +',');
+}
 dChart = null;
 function graph(varName)
 {
@@ -192,6 +236,10 @@ function graph(varName)
                         }],
                     }
             });
+            chart.options.animation = false; // disables all animations
+            chart.options.animations.colors = false; // disables animation defined by the collection of 'colors' properties
+            chart.options.animations.x = false; // disables animation defined by the 'x' property
+            chart.options.transitions.active.animation.duration = 0; // disables the animation for 'active' mode
             dChart = chart;
             send(tn + ': every(100ms) ' + cn + ' << ' + varName +',');
     }, 500);
@@ -495,6 +543,14 @@ function processCommand(cmd)
             show(args, true);
         else if (rcmd == 'graph')
             graph(args);
+        else if (rcmd == 'slider')
+        {
+            var sargs = args.split(' ');
+            var rmin = parseFloat(sargs[0]);
+            var rmax = parseFloat(sargs[1]);
+            var variable = sargs.slice(2).join(' ');
+            slider(variable, rmin, rmax);
+        }
         else if (rcmd == 'connect')
             connect(args);
         else if (rcmd == 'watch')
@@ -565,7 +621,7 @@ function onLoad()
 <pre id="history"></pre>
 </div>
 <div id="command" class="command">
-   <input type="text" id="tCmd" class="commandText" placeholder="#show #graph or urbiscript">
+   <input type="text" id="tCmd" class="commandText" placeholder="host or host:port to connect to">
 </div>
 </body>
 </html>
