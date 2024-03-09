@@ -6,6 +6,9 @@
     width: 100%;
     height: 70%;
 }
+.popup {
+    position: absolute;
+}
 .dchart {
     width: 500px;
     height: 400px;
@@ -119,6 +122,56 @@ function send(msg)
 
 var nextChannel = 1;
 var gev;
+
+function resetWidget(cname)
+{
+}
+
+function setNumPoints(cname, np)
+{
+    props[cname].numPoints = np;
+}
+function popupNumPoints(ev, cname)
+{
+    var d = document.createElement('div');
+    d.classList.add('popup');
+    d.style.left = ev.clientX;
+    d.style.top = ev.clientY;
+    var npl = [100, 200, 500, 1000, 10000];
+    for (var i in npl)
+    {
+        var np = npl[i];
+        d.innerHTML += `<button type="button" onclick="setNumPoints('${cname}', ${np})">${np}</button> <br/>`;
+    }
+    d.addEventListener('mouseleave', function(ev) {
+                document.body.removeChild(d);
+    });
+    document.body.appendChild(d);
+}
+function popupMenu(ev)
+{
+    var d = document.createElement('div');
+    var chds = ev.target.parentElement.parentElement.children;
+    var id = '';
+    for (var i in chds)
+    {
+        id = chds[i].id;
+        if (id)
+            break;
+    }
+    d.classList.add('popup');
+    d.style.left = ev.clientX;
+    d.style.top = ev.clientY;
+    d.innerHTML = `<button type="button" onclick="resetWidget('${id}')">Reset</button> <br/>`;
+    if (props[id].kind == 'graph')
+    {
+        d.innerHTML += `<button type="button" onclick="popupNumPoints(event, '${id}')">Num points</button> <br/>`;
+    }
+    d.addEventListener('mouseleave', function(ev) {
+                document.body.removeChild(d);
+    });
+    document.body.appendChild(d);
+}
 function onEditKeydown(ev)
 {
     if (ev.key === 'Enter' || ev.keyCode === 13)
@@ -223,7 +276,7 @@ function slider(varName, rmin, rmax)
     d.classList.add("draggable");
     d.classList.add("widgetShow");
     hEditor = `<input class="slider" type="range" step="${step}" min="${rmin}" max="${rmax}" oninput="onSliderInput(event)"/>`;
-    d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><span id="'+cn+'" class="variable"></span>'+hEditor+'</div>';
+    d.innerHTML = '<div class="dragger">'+varName+'<button type="button" class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</button><button type="button" class="closer" onclick="popupMenu(event)">...</button></div><span id="'+cn+'" class="variable"></span>'+hEditor+'</div>';
     makeResizable(d);
     document.getElementById('board').appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
     send(tn+':every(100ms) ' + cn + ' << ' + varName +',');
@@ -238,6 +291,7 @@ function graph(varName)
     props[cn] = {
         kind: 'graph',
         varname: varName,
+        numPoints: 200,
     };
     send('var ' + cn + ' = Channel.new("'+cn+'");');
     send('var ' + tn + ' = Tag.new();');
@@ -245,10 +299,10 @@ function graph(varName)
     dispatchers[cn] = function(tag, res) {
         chart.data.labels.push(chart.data.labels.length);
         chart.data.datasets[0].data.push(parseFloat(res));
-        if (chart.data.labels.length > 200)
+        if (chart.data.labels.length > props[cn].numPoints)
         {
-            chart.data.labels = chart.data.labels.slice(chart.data.labels.length-200);
-            chart.data.datasets[0].data = chart.data.datasets[0].data.slice(chart.data.datasets[0].data.length-200);
+            chart.data.labels = chart.data.labels.slice(chart.data.labels.length-props[cn].numPoints);
+            chart.data.datasets[0].data = chart.data.datasets[0].data.slice(chart.data.datasets[0].data.length-props[cn].numPoints);
         }
         chart.update();
     };
@@ -256,7 +310,7 @@ function graph(varName)
     d.classList.add("draggable");
     d.classList.add("widgetGraph");
     d.id = "c_" + cn;
-    d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><canvas class="dchart" id="'+cn+'"></div>';
+    d.innerHTML = '<div class="dragger">'+varName+'<button class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</button><button type="button" class="closer" onclick="popupMenu(event)">...</button></div><canvas class="dchart" id="'+cn+'"></div>';
     document.getElementById('board').appendChild(d);
     //document.getElementById('board').innerHTML += '<div class="draggable" id="c_'+cn+'"><div class="dragger">'+varName+'</div><canvas class="dchart" id="'+cn+'"></div></div>';
     setTimeout(function() {
