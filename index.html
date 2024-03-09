@@ -23,6 +23,10 @@
     width: 200px;
     height: 150px;
 }
+.widgetButton {
+    width: 200px;
+    height: 150px;
+}
 .variable {
     font-size: 50px;
 }
@@ -159,6 +163,27 @@ function closeWidget(event)
     var tn = 't' + id.substr(1);
     send(tn + ".stop();");
     d.parentElement.parentElement.remove();
+}
+
+function onButtonClick(cn)
+{
+    send(props[cn].code);
+}
+
+function button(label, code)
+{
+    var cid = nextChannel;
+    nextChannel++;
+    var cn = "c_" + cid;
+    props[cn] = {
+        code: code,
+    };
+    d = document.createElement('div');
+    d.classList.add("draggable");
+    d.classList.add("widgetButton");
+    d.innerHTML = '<div class="dragger">Button<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><button type="button" id="'+cn+'" onclick="onButtonClick('+ "'" + cn + "'" + ')">'+label+'</button>';
+    makeResizable(d);
+    document.getElementById('board').appendChild(d);
 }
 
 function onSliderInput(ev)
@@ -528,6 +553,16 @@ function makeResizable(element, minW = 100, minH = 100, size = 20)
         return dragMouseDown
     }
 }
+function moveLastWidget(x, y, w, h)
+{
+    var childs = document.getElementById('board').children;
+    var d = childs[childs.length-1];
+    d.style.top = y;
+    d.style.left = x;
+    d.style.width = w;
+    d.style.height = h;
+}
+
 function processCommand(cmd)
 {
     if (!socket)
@@ -550,6 +585,18 @@ function processCommand(cmd)
             var rmax = parseFloat(sargs[1]);
             var variable = sargs.slice(2).join(' ');
             slider(variable, rmin, rmax);
+        }
+        else if (rcmd == "button")
+        {
+            var sargs = args.split(' ');
+            var label = sargs[0].replaceAll('_', ' ');
+            var code = sargs.slice(1).join(' ');
+            button(label, code);
+        }
+        else if (rcmd == "move")
+        {
+            var sargs = args.split(' ');
+            moveLastWidget(parseInt(sargs[0]), parseInt(sargs[1]), parseInt(sargs[2]), parseInt(sargs[3]));
         }
         else if (rcmd == 'connect')
             connect(args);
