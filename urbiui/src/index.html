@@ -14,7 +14,7 @@
     height: 400px;
 }
 .history {
-    height: 22%;
+    width: 50%;
     overflow: scroll;
 }
 .draggable {
@@ -29,6 +29,9 @@
 .widgetButton {
     width: 200px;
     height: 150px;
+}
+.boardButton {
+    font-size: 40px;
 }
 .variable {
     font-size: 50px;
@@ -49,10 +52,27 @@
   float: right;
 }
 .commandText {
-  width: 80%;
+  width: 65%;
+}
+.commandArea {
+  width: 100%;
+  height: 100%;
 }
 .slider {
   float: right;
+}
+.inline {
+  display: inline;
+}
+.flex {
+  display: flex;
+}
+.interact {
+    height: 22%;
+}
+.editpane {
+    display: flex;
+    flex-direction: column;
 }
 /*.dragger::before {
   content: "window";
@@ -254,7 +274,7 @@ function button(label, code)
     d = document.createElement('div');
     d.classList.add("draggable");
     d.classList.add("widgetButton");
-    d.innerHTML = '<div class="dragger">Button<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><button type="button" id="'+cn+'" onclick="onButtonClick('+ "'" + cn + "'" + ')">'+label+'</button>';
+    d.innerHTML = '<div class="dragger">Button<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><button type="button" class="boardButton" id="'+cn+'" onclick="onButtonClick('+ "'" + cn + "'" + ')">'+label+'</button>';
     makeResizable(d);
     document.getElementById('board').appendChild(d);
 }
@@ -727,6 +747,8 @@ function periodicTask()
     var now = Date.now();
     for (var k in props)
     {
+        if (k == 'prelude')
+            continue;
         var v = props[k];
         if (v.kind == 'button')
             continue;
@@ -802,6 +824,11 @@ function loadState(name)
 
 function injectState(d)
 {
+    if ('prelude' in d)
+    {
+        props['prelude'] = d['prelude'];
+        send(d['prelude']);
+    }
     for (var k in d)
     {
         var v = d[k];
@@ -829,16 +856,48 @@ function loadFile()
             injectState(d);
     });
 }
+function makeButton()
+{
+    var bn = document.getElementById('tButtonName').value;
+    var bc = document.getElementById('taCmd').value;
+    button(bn, bc);
+}
+function sendCommandArea()
+{
+    var bc = document.getElementById('taCmd').value;
+    send(bc);
+}
+function setPrelude()
+{
+    var bc = document.getElementById('taCmd').value;
+    props['prelude'] = bc;
+}
+function editPrelude()
+{
+    document.getElementById('taCmd').value = props['prelude'];
+}
 </script>
 </head>
 <body onload="onLoad()">
 <div id="board" class="board"></div>
-<div class="history" id="histCont">
-<pre id="history"></pre>
+<div class="flex interact">
+  <div class="history" id="histCont">
+    <pre id="history"></pre>
+ </div>
+ <div class="editpane">
+   <textarea id="taCmd" class="commandArea"></textarea>
+   <div class="buttons">
+   <button type="button" onclick="sendCommandArea()">Send</button>
+   <button type="button" onclick="setPrelude()">Save prelude</button>
+   <button type="button" onclick="editPrelude()">Edit prelude</button>
+   <input type="text" length="8" id="tButtonName" placeholder="button name"/>
+   <button type="button" onclick="makeButton()">To button</button>
+   </div>
+ </div>
 </div>
 <div id="command" class="command">
    <input type="text" id="tCmd" class="commandText" placeholder="host or host:port to connect to">
-   Load conf:<input type="file" id="inFile" onchange="loadFile()" />
+   Load conf:<input class="inline" type="file" id="inFile" onchange="loadFile()" />
 </div>
 </body>
 </html>
