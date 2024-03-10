@@ -91,7 +91,10 @@ var hist = [];
 var historyPos = 0;
 function onReceiveTagged(tag, res)
 {
-    dispatchers[tag](tag, res);
+    if (tag == 'command')
+        processCommand(res.substr(1, res.length-2));
+    else
+        dispatchers[tag](tag, res);
 }
 function onReceive(txt)
 {
@@ -224,7 +227,7 @@ function show(varName, withEditor)
     nextChannel++;
     var cn = "c_" + cid;
     var tn = "t_" + cid;
-    send('var ' + cn + ' = Channel.new("'+cn+'");|');
+    send('var ' + cn + ' = Channel.new("'+cn+'")|;');
     send('var ' + tn + ' = Tag.new()|;');
     dispatchers[cn] = function(tag, res) {
         document.getElementById(tag).innerText = res;
