@@ -417,6 +417,8 @@ function graph(varName, ctx=null)
     setTimeout(function() {
             if (!ctx)
                 makeResizable(document.getElementById('c_'+cn));
+            else
+                makeResizable(document.getElementById('c_'+cn), 100, 100, 20, true);
             chart = new Chart(document.getElementById(cn), {
                     type: 'line',
                     data: {
@@ -474,8 +476,10 @@ document.addEventListener('mousemove', function(e) {
 
 
 
-function makeResizable(element, minW = 100, minH = 100, size = 20)
+function makeResizable(element, minW = 100, minH = 100, size = 20, brOnly=false)
 {
+    if (!brOnly)
+    {
     const top = document.createElement('div');
     top.style.width = '100%';
     top.style.height = size + 'px';
@@ -584,6 +588,24 @@ function makeResizable(element, minW = 100, minH = 100, size = 20)
     corner4.addEventListener('mousedown',resizeYPositive())
 
     element.appendChild(corner4);
+    }
+    else
+    {
+        const corner4 = document.createElement('div');
+        corner4.style.width = size + 'px';
+        corner4.style.height = size + 'px';
+        corner4.style.backgroundColor = 'transparent';
+        //corner4.style.position = 'absolute';
+        //corner4.style.bottom = - (size/2) + 'px';
+        //corner4.style.right = - (size/2) + 'px';
+        corner4.style.cursor = 'se-resize';
+        corner4.style.cssFloat = 'right';
+
+        corner4.addEventListener('mousedown',resizeXPositive())
+        corner4.addEventListener('mousedown',resizeYPositive())
+
+        element.appendChild(corner4);
+    }
     
     function get_int_style(key)
     {
