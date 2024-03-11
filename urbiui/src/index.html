@@ -34,18 +34,18 @@
     height: 150px;
 }
 .boardButton {
-    font-size: 40px;
+    font-size: 30px;
 }
 .variable {
-    font-size: 50px;
+    font-size: 30px;
 }
 .widgetGraph {
   width: 500px;
   height: 400px;
 }
 .widgetContainer {
-  width: 500px;
-  height: 400px;
+  width: 320px;
+  height: 370px;
 }
 .containerContent {
   display: flex;
@@ -108,9 +108,18 @@ function onReceiveTagged(tag, res)
 }
 function onReceive(txt)
 {
+    var lines = txt.split('\n');
+    for (var l in lines)
+    {
+        if (lines[l] != '')
+            onReceiveLine(lines[l] + '\n');
+    }
+}
+function onReceiveLine(txt)
+{
     var reTagged = /\[[0-9]+:([^\]]+)\] (.*)/ ;
     var res = txt.match(reTagged);
-    if (res != null && res[1]!='error')
+    if (res != null && res[1]!='error' && res[1] != 'warning')
     {
         //console.log(res);
         onReceiveTagged(res[1], res[2]);
@@ -196,6 +205,10 @@ function popupNumPoints(ev, cname)
     });
     document.body.appendChild(d);
 }
+function editCode(cn)
+{
+    document.getElementById('taCmd').value = props[cn].code;
+}
 function popupMenu(ev)
 {
     var d = document.createElement('div');
@@ -214,6 +227,10 @@ function popupMenu(ev)
     if (props[id].kind == 'graph')
     {
         d.innerHTML += `<button type="button" onclick="popupNumPoints(event, '${id}')">Num points</button> <br/>`;
+    }
+    if (props[id].kind == 'button')
+    {
+        d.innerHTML += `<button type="button" onclick="editCode('${id}')">Edit code</button> <br/>`;
     }
     d.addEventListener('mouseleave', function(ev) {
                 document.body.removeChild(d);
@@ -400,7 +417,10 @@ function graph(varName, ctx=null)
     };
     d = document.createElement('div');
     if (ctx)
+    {
         d.classList.add("widgetInner");
+        d.style.width = "300px";
+    }
     else
     {
         d.classList.add("draggable");
@@ -424,7 +444,7 @@ function graph(varName, ctx=null)
                     data: {
                         labels: [],
                         datasets: [ {
-                            label: 'v',
+                            label: (ctx ? varName : 'v'),
                             data: [],
                         }],
                     }
@@ -762,6 +782,16 @@ function getOrMakeContainer(name, ctx=null)
     d.id = name;
     d.innerHTML = '<div class="dragger">'+name+'<button type="button" class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</button><button type="button" class="closer" onclick="popupMenu(event)">...</button></div><div class="containerContent"></div>';
     makeResizable(d);
+    var bc = document.getElementById('board').children;
+    var x = 0;
+    for (var i in bc)
+    {
+        var c = bc[i];
+        var xx = c.offsetLeft + c.offsetWidth;
+        if (x < xx)
+            x = xx;
+    }
+    d.style.left = x;
     (ctx ? ctx : document.getElementById('board')).appendChild(d);
     return d;
 }
