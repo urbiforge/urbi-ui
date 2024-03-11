@@ -915,6 +915,8 @@ function saveState(name)
 {
     for (var k in props)
     {
+        if (k == 'prelude')
+            continue;
         var v = props[k];
         var d = document.getElementById(k);
         var p = d.parentElement;
@@ -940,15 +942,21 @@ function injectState(d)
     }
     for (var k in d)
     {
+        if (k == 'prelude')
+            continue;
         var v = d[k];
         var kind = v.kind;
+        var pfx = '';
+        if (v.parent)
+            pfx = '#in ' + v.parent + ' ';
         if (kind == 'slider')
-            processCommand(`#slider ${v.rmin} ${v.rmax} ${v.varname}`);
+            processCommand(`${pfx}#slider ${v.rmin} ${v.rmax} ${v.varname}`);
         else if (kind == 'button')
-            processCommand(`#button ${v.label.replaceAll(' ', '_')} ${v.code}`);
+            processCommand(`${pfx}#button ${v.label.replaceAll(' ', '_')} ${v.code}`);
         else
-            processCommand(`#${v.kind} ${v.varname}`);
-        processCommand(`#move ${v.left} ${v.top} ${v.width} ${v.height}`);
+            processCommand(`${pfx}#${v.kind} ${v.varname}`);
+        if (!pfx)
+            processCommand(`#move ${v.left} ${v.top} ${v.width} ${v.height}`);
     }
 }
 
