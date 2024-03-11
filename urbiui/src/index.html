@@ -22,6 +22,9 @@
   background: #ddd;
   position: absolute;
 }
+.widgetInner {
+  border: 1px black solid;
+}
 .widgetShow {
     width: 200px;
     height: 150px;
@@ -40,7 +43,14 @@
   width: 500px;
   height: 400px;
 }
-
+.widgetContainer {
+  width: 500px;
+  height: 400px;
+}
+.containerContent {
+  display: flex;
+  flex-wrap: wrap;
+}
 .draggable.dragging {
   user-select: none;
 }
@@ -221,7 +231,7 @@ function onEditKeydown(ev)
         send(`${varname} = ${val}|;`);
     }
 }
-function show(varName, withEditor)
+function show(varName, withEditor, ctx)
 {
     var cid = nextChannel;
     nextChannel++;
@@ -237,16 +247,31 @@ function show(varName, withEditor)
         varname: varName,
         kind: (withEditor? 'edit' : 'show'),
         lastReceiveTime: Date.now(),
+        parent: (ctx ? ctx.id : ''),
     };
     d = document.createElement('div');
-    d.classList.add("draggable");
-    d.classList.add("widgetShow");
+    if (!ctx)
+    {
+        d.classList.add("draggable");
+        d.classList.add("widgetShow");
+    }
+    else
+        d.classList.add("widgetInner");
     hEditor = '';
     if (withEditor)
         hEditor = '<input type="text" onkeydown="onEditKeydown(event)" placeholder="set value" />'
-    d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><span id="'+cn+'" class="variable"></span>'+hEditor+'</div>';
-    makeResizable(d);
-    document.getElementById('board').appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
+    if (ctx)
+    {
+        d.innerHTML = '<div><span class="variable">'+varName+': </span><span id="'+cn+'" class="variable"></span>'+hEditor+'</div>';
+    }
+    else
+    {
+        d.innerHTML = '<div class="dragger">'+varName+'<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><span id="'+cn+'" class="variable"></span>'+hEditor+'</div>';
+        makeResizable(d);
+    }
+    console.log('build in');
+    console.log(ctx);
+    (ctx? ctx.children[1] : document.getElementById('board')).appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
     send(tn+':every(100ms) ' + cn + ' << ' + varName +',');
 }
 
@@ -264,7 +289,7 @@ function onButtonClick(cn)
     send(props[cn].code);
 }
 
-function button(label, code)
+function button(label, code, ctx=null)
 {
     var cid = nextChannel;
     nextChannel++;
@@ -273,13 +298,24 @@ function button(label, code)
         kind: 'button',
         label: 'label',
         code: code,
+        parent: (ctx ? ctx.id : ''),
     };
     d = document.createElement('div');
-    d.classList.add("draggable");
-    d.classList.add("widgetButton");
-    d.innerHTML = '<div class="dragger">Button<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><button type="button" class="boardButton" id="'+cn+'" onclick="onButtonClick('+ "'" + cn + "'" + ')">'+label+'</button>';
-    makeResizable(d);
-    document.getElementById('board').appendChild(d);
+    if (ctx)
+        d.classList.add("widgetInner");
+    else
+    {
+        d.classList.add("draggable");
+        d.classList.add("widgetButton");
+    }
+    if (ctx)
+        d.innerHTML = '<button type="button" class="boardButton" id="'+cn+'" onclick="onButtonClick('+ "'" + cn + "'" + ')">'+label+'</button>';
+    else
+    {
+        d.innerHTML = '<div class="dragger">Button<div class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</div></div><button type="button" class="boardButton" id="'+cn+'" onclick="onButtonClick('+ "'" + cn + "'" + ')">'+label+'</button>';
+        makeResizable(d);
+    }
+    (ctx? ctx.children[1] : document.getElementById('board')).appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
 }
 
 function onSliderInput(ev)
@@ -290,7 +326,7 @@ function onSliderInput(ev)
     send(`${varname} = ${val}|;`);
 }
 
-function slider(varName, rmin, rmax)
+function slider(varName, rmin, rmax, ctx=null)
 {
     var cid = nextChannel;
     nextChannel++;
@@ -308,6 +344,7 @@ function slider(varName, rmin, rmax)
         rmin: rmin,
         rmax: rmax,
         lastReceiveTime: Date.now(),
+        parent: (ctx ? ctx.id : ''),
     };
     var step = 1;
     if (rmax - rmin < 10)
@@ -315,16 +352,26 @@ function slider(varName, rmin, rmax)
         step = (rmax-rmin) / 100;
     }
     d = document.createElement('div');
-    d.classList.add("draggable");
-    d.classList.add("widgetShow");
+    if (ctx)
+        d.classList.add("widgetInner");
+    else
+    {
+        d.classList.add("draggable");
+        d.classList.add("widgetShow");
+    }
     hEditor = `<input class="slider" type="range" step="${step}" min="${rmin}" max="${rmax}" oninput="onSliderInput(event)"/>`;
-    d.innerHTML = '<div class="dragger">'+varName+'<button type="button" class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</button><button type="button" class="closer" onclick="popupMenu(event)">...</button></div><span id="'+cn+'" class="variable"></span>'+hEditor+'</div>';
-    makeResizable(d);
-    document.getElementById('board').appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
+    if (ctx)
+        d.innerHTML = '<div><span class="variable">'+varName+': </span><span id="'+cn+'" class="variable"></span>'+hEditor+'</div>';
+    else
+    {
+        d.innerHTML = '<div class="dragger">'+varName+'<button type="button" class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</button><button type="button" class="closer" onclick="popupMenu(event)">...</button></div><span id="'+cn+'" class="variable"></span>'+hEditor+'</div>';
+        makeResizable(d);
+    }
+    (ctx? ctx.children[1] : document.getElementById('board')).appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
     send(tn+':every(100ms) ' + cn + ' << ' + varName +',');
 }
 dChart = null;
-function graph(varName)
+function graph(varName, ctx=null)
 {
     var cid = nextChannel;
     nextChannel++;
@@ -335,6 +382,7 @@ function graph(varName)
         varname: varName,
         numPoints: 200,
         lastReceiveTime: Date.now(),
+        parent: (ctx ? ctx.id : ''),
     };
     send('var ' + cn + ' = Channel.new("'+cn+'")|;');
     send('var ' + tn + ' = Tag.new()|;');
@@ -351,14 +399,24 @@ function graph(varName)
         chart.update();
     };
     d = document.createElement('div');
-    d.classList.add("draggable");
-    d.classList.add("widgetGraph");
+    if (ctx)
+        d.classList.add("widgetInner");
+    else
+    {
+        d.classList.add("draggable");
+        d.classList.add("widgetGraph");
+    }
     d.id = "c_" + cn;
-    d.innerHTML = '<div class="dragger">'+varName+'<button class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</button><button type="button" class="closer" onclick="popupMenu(event)">...</button></div><canvas class="dchart" id="'+cn+'"></div>';
-    document.getElementById('board').appendChild(d);
+    if (ctx)
+        d.innerHTML = '<canvas class="dchart" id="'+cn+'">';
+    else
+        d.innerHTML = '<div class="dragger">'+varName+'<button class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</button><button type="button" class="closer" onclick="popupMenu(event)">...</button></div><canvas class="dchart" id="'+cn+'"></div>';
+    (ctx? ctx.children[1] : document.getElementById('board')).appendChild(d); // innerHTML += '<div class="draggable"><div class="dragger">'+varName+'</div><span id="'+cn+'"></div></div>';
+   
     //document.getElementById('board').innerHTML += '<div class="draggable" id="c_'+cn+'"><div class="dragger">'+varName+'</div><canvas class="dchart" id="'+cn+'"></div></div>';
     setTimeout(function() {
-            makeResizable(document.getElementById('c_'+cn));
+            if (!ctx)
+                makeResizable(document.getElementById('c_'+cn));
             chart = new Chart(document.getElementById(cn), {
                     type: 'line',
                     data: {
@@ -671,7 +729,21 @@ function moveLastWidget(x, y, w, h)
     d.style.height = h;
 }
 
-function processCommand(cmd)
+function getOrMakeContainer(name, ctx=null)
+{
+    var ex = document.getElementById(name);
+    if (ex)
+        return ex;
+    var d = document.createElement('div');
+    d.classList.add('widgetContainer');
+    d.classList.add('draggable');
+    d.id = name;
+    d.innerHTML = '<div class="dragger">'+name+'<button type="button" class="closer" onclick="closeWidget(event)">X&nbsp;&nbsp;</button><button type="button" class="closer" onclick="popupMenu(event)">...</button></div><div class="containerContent"></div>';
+    makeResizable(d);
+    (ctx ? ctx : document.getElementById('board')).appendChild(d);
+    return d;
+}
+function processCommand(cmd, ctx=null)
 {
     if (!socket)
         connect(cmd);
@@ -681,25 +753,37 @@ function processCommand(cmd)
         var rcmd = cmd.substr(1, s-1);
         var args = cmd.substr(s+1);
         if (rcmd == 'show')
-            show(args, false);
+            show(args, false, ctx);
+        else if (rcmd == 'group')
+        {
+            getOrMakeContainer(args, ctx);
+        }
+        else if (rcmd == 'in')
+        {
+            var sargs = args.split(' ');
+            var targetName = sargs[0];
+            var rest = sargs.slice(1).join(' ');
+            var cont = getOrMakeContainer(targetName);
+            processCommand(rest, cont);
+        }
         else if (rcmd == 'edit')
-            show(args, true);
+            show(args, true, ctx);
         else if (rcmd == 'graph')
-            graph(args);
+            graph(args, ctx);
         else if (rcmd == 'slider')
         {
             var sargs = args.split(' ');
             var rmin = parseFloat(sargs[0]);
             var rmax = parseFloat(sargs[1]);
             var variable = sargs.slice(2).join(' ');
-            slider(variable, rmin, rmax);
+            slider(variable, rmin, rmax, ctx);
         }
         else if (rcmd == "button")
         {
             var sargs = args.split(' ');
             var label = sargs[0].replaceAll('_', ' ');
             var code = sargs.slice(1).join(' ');
-            button(label, code);
+            button(label, code, ctx);
         }
         else if (rcmd == "move")
         {
