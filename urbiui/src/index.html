@@ -928,7 +928,9 @@ var searching = false;
 var searchTerm = '';
 function onLoad()
 {
-
+    var hd = window.localStorage.getItem('history');
+    if (hd)
+        hist = JSON.parse(hd);
     function setSearchTerm(st) {
         searchTerm = st;
         document.getElementById('search').innerText = searching ?  ('Search: ' + st) : '';
@@ -954,7 +956,12 @@ function onLoad()
                 processCommand(cmd);
                 document.getElementById('tCmd').value = '';
                 if (hist[hist.length-1] != cmd)
+                {
                     hist.push(cmd);
+                    if (hist.length > 5000)
+                        hist = hist.splice(hist.length-5000);
+                    window.localStorage.setItem('history', JSON.stringify(hist));
+                }
                 historyPos = hist.length;
                 searching = false;
                 setSearchTerm('');
