@@ -926,6 +926,22 @@ function periodicTask()
 }
 function onLoad()
 {
+    var searching = false;
+    var searchTerm = '';
+    function search() {
+        if (searchTerm)
+        {
+            for (var i = historyPos-1;i>0;i--)
+            {
+                if (hist[i].indexOf(searchTerm) != -1)
+                {
+                    historyPos = i;
+                    document.getElementById('tCmd').value = hist[historyPos];
+                    break;
+                }
+            }
+        }
+    }
     document.getElementById('tCmd').addEventListener('keydown', function(ev) {
             if (ev.key === 'Enter' || ev.keyCode === 13)
             {
@@ -935,6 +951,19 @@ function onLoad()
                 if (hist[hist.length-1] != cmd)
                     hist.push(cmd);
                 historyPos = hist.length;
+                searching = false;
+                setSearchTerm('');
+            }
+            if (ev.keyCode == 18 && ev.ctrlKey)
+            {
+                searching = true;
+                document.getElementById('search').innnerText = "Search: " + searchTerm;
+                search();
+            }
+            else if (searching && ev.key)
+            {
+                setSearchTerm(searchTerm + ev.key);
+                search();
             }
             else if (ev.keyCode === 38) { //up
                 if (historyPos > 0)
@@ -1072,7 +1101,7 @@ function editPrelude()
  </div>
 </div>
 <div id="command" class="command">
-   <input type="text" id="tCmd" class="commandText" placeholder="host or host:port to connect to">
+   <span id="search"></span><input type="text" id="tCmd" class="commandText" placeholder="host or host:port to connect to">
    Load conf:<input class="inline" type="file" id="inFile" onchange="loadFile()" />
 </div>
 </body>
