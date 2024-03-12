@@ -924,14 +924,19 @@ function periodicTask()
             resetWidget(k);
     }
 }
+var searching = false;
+var searchTerm = '';
 function onLoad()
 {
-    var searching = false;
-    var searchTerm = '';
+
+    function setSearchTerm(st) {
+        searchTerm = st;
+        document.getElementById('search').innerText = searching ?  ('Search: ' + st) : '';
+    }
     function search() {
         if (searchTerm)
         {
-            for (var i = historyPos-1;i>0;i--)
+            for (var i = historyPos;i>0;i--)
             {
                 if (hist[i].indexOf(searchTerm) != -1)
                 {
@@ -954,16 +959,27 @@ function onLoad()
                 searching = false;
                 setSearchTerm('');
             }
-            if (ev.keyCode == 18 && ev.ctrlKey)
+            else if (ev.keyCode == 82 && ev.altKey)
             {
+                if (searching)
+                    historyPos--;
+                else
+                    historyPos = hist.length-1;
                 searching = true;
-                document.getElementById('search').innnerText = "Search: " + searchTerm;
+                document.getElementById('search').innerText = "Search: " + searchTerm;
                 search();
+                ev.preventDefault();;
             }
-            else if (searching && ev.key)
+            else if (searching)
             {
-                setSearchTerm(searchTerm + ev.key);
+                if (ev.keyCode >= 32)
+                    setSearchTerm(searchTerm + ev.key);
+                else if (ev.keyCode == 8)
+                {
+                    setSearchTerm(searchTerm.substr(0, searchTerm.length-1));
+                }
                 search();
+                ev.preventDefault();
             }
             else if (ev.keyCode === 38) { //up
                 if (historyPos > 0)
@@ -978,6 +994,11 @@ function onLoad()
                    historyPos++;
                    document.getElementById('tCmd').value = hist[historyPos];
                }
+            }
+            if ((ev.keyCode <= 40 && ev.keyCode >= 37) && searching)
+            {
+                searching = false;
+                setSearchTerm('');
             }
     });
     setInterval(periodicTask, 1000);
