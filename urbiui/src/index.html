@@ -292,13 +292,40 @@ function show(varName, withEditor, ctx)
     send(tn+':every(100ms) ' + cn + ' << ' + varName +',');
 }
 
+function deleteGroup(grpId)
+{
+    var toDel = [];
+    for (var k in props)
+    {
+        var v = props[k];
+        if (v.parent ==  grpId && v.kind != 'button')
+        {
+            var tn = 't' + k.substr(1);
+            send(tn + ".stop();");
+            toDel.push(k);
+        }
+    }
+    for (var i in toDel)
+        delete props[toDel[i]];
+    document.getElementById(grpId).remove();
+}
+
 function closeWidget(event)
 {
     var d = event.target;
-    var id = d.parentElement.parentElement.children[1].id;
-    var tn = 't' + id.substr(1);
-    send(tn + ".stop();");
-    d.parentElement.parentElement.remove();
+    var grpId = d.parentElement.parentElement.id;
+    if (grpId)
+    {
+        deleteGroup(grpId);
+    }
+    else{
+        var id = d.parentElement.parentElement.children[1].id;
+        var tn = 't' + id.substr(1);
+        send(tn + ".stop();");
+        delete props[id];
+        d.parentElement.parentElement.remove();
+    }
+    
 }
 
 function onButtonClick(cn)
@@ -810,6 +837,8 @@ function processCommand(cmd, ctx=null)
         {
             getOrMakeContainer(args, ctx);
         }
+        else if (rcmd == 'del')
+            deleteGroup(args);
         else if (rcmd == 'in')
         {
             var sargs = args.split(' ');
