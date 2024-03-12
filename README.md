@@ -3,6 +3,11 @@
 Urbi UI is a native urbiscript client capable of displaying widgets to graph,
 monitor and edit urbiscript variables.
 
+
+
+https://github.com/urbiforge/urbi-ui/assets/3638847/b797a188-bace-4c24-b7b6-ae0418123f69
+
+
 ## Installing
 
 Either get a binary release, or run from source:
